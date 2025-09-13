@@ -8,8 +8,8 @@ function TripResults({ trip }) {
             <p><strong>From:</strong> {trip.current_location}</p>
             <p><strong>Pickup:</strong> {trip.pickup_location}</p>
             <p><strong>Dropoff:</strong> {trip.dropoff_location}</p>
-            <p><strong>Distance:</strong> {trip.distance_miles} miles</p>
-            <p><strong>Duration:</strong> {trip.duration_hours} hrs</p>
+            <p><strong>Distance:</strong> {trip.route_distance_m ? (trip.route_distance_m / 1609.34).toFixed(2) : '--'} miles</p>
+            <p><strong>Duration:</strong> {trip.route_duration_s ? (trip.route_duration_s / 3600).toFixed(2) : '--'} hrs</p>
 
             <h3>Stops</h3>
             <ul>

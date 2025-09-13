@@ -52,8 +52,6 @@ class TripSerializer(serializers.ModelSerializer):
             "pickup_location",
             "dropoff_location",
             "current_cycle_used",
-            "distance_miles",
-            "duration_hours",
             "created_at",
             "stops",
             "events",

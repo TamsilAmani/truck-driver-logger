@@ -7,9 +7,6 @@ class Trip(models.Model):
     dropoff_location = models.CharField(max_length=255)
     current_cycle_used = models.IntegerField()
 
-    distance_miles = models.FloatField(null=True, blank=True)
-    duration_hours = models.FloatField(null=True, blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -47,6 +44,7 @@ class Event(models.Model):
     status = models.CharField(max_length=50, choices=EVENT_STATUSES)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
+    location = models.CharField(max_length=255, null=True, blank=True)  # Location at status change
     note = models.CharField(max_length=255, null=True, blank=True)
     order_index = models.IntegerField()
 
