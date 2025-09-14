@@ -13,6 +13,8 @@ class StopSerializer(serializers.ModelSerializer):
             "arrival_time",
             "duration_hours",
             "order_index",
+            "lat",
+            "lon",
         ]
 
 

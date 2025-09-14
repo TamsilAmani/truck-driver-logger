@@ -1,5 +1,6 @@
 # Create your views here.
 from datetime import datetime, timedelta
+from math import atan2, cos, radians, sin, sqrt
 
 import requests
 from django.shortcuts import render
@@ -51,107 +52,11 @@ class PlanTripView(APIView):
         # Build fake timeline
         start_time = timezone.now().replace(minute=0, second=0, microsecond=0)
 
-        # Pickup stop
-        pickup_stop = Stop.objects.create(
-            trip=trip,
-            type="pickup",
-            location=pickup_location,
-            arrival_time=start_time + timedelta(hours=2),
-            duration_hours=1.0,
-            order_index=1,
-        )
-
-
-        # Dropoff stop
-        dropoff_stop = Stop.objects.create(
-            trip=trip,
-            type="dropoff",
-            location=dropoff_location,
-            arrival_time=start_time + timedelta(hours=9),
-            duration_hours=1.0,
-            order_index=3,
-        )
-
-        # Events (mock driving and on-duty blocks)
-        Event.objects.create(
-            trip=trip,
-            status="driving",
-            start_time=start_time,
-            end_time=start_time + timedelta(hours=2),
-            note="Driving to pickup",
-            order_index=1,
-        )
-
-        Event.objects.create(
-            trip=trip,
-            status="on_duty",
-            start_time=start_time + timedelta(hours=2),
-            end_time=start_time + timedelta(hours=3),
-            note="Pickup",
-            order_index=2,
-        )
-
-        Event.objects.create(
-            trip=trip,
-            status="driving",
-            start_time=start_time + timedelta(hours=3),
-            end_time=start_time + timedelta(hours=5),
-            note="Driving to fuel stop",
-            order_index=3,
-        )
-
-        Event.objects.create(
-            trip=trip,
-            status="on_duty",
-            start_time=start_time + timedelta(hours=5),
-            end_time=start_time + timedelta(hours=5, minutes=30),
-            note="Fuel stop",
-            order_index=4,
-        )
-
-        Event.objects.create(
-            trip=trip,
-            status="driving",
-            start_time=start_time + timedelta(hours=5, minutes=30),
-            end_time=start_time + timedelta(hours=9),
-            note="Driving to dropoff",
-            order_index=5,
-        )
-
-        Event.objects.create(
-            trip=trip,
-            status="on_duty",
-            start_time=start_time + timedelta(hours=9),
-            end_time=start_time + timedelta(hours=10),
-            note="Dropoff",
-            order_index=6,
-        )
-
-        # LogSheet (for one day)
-        LogSheet.objects.create(
-            trip=trip,
-            date=start_time.date(),
-            sheet_json={
-                "events": [
-                    {"status": "driving", "start": "06:00", "end": "08:00"},
-                    {"status": "on_duty", "start": "08:00", "end": "09:00", "note": "Pickup"},
-                    {"status": "driving", "start": "09:00", "end": "11:00"},
-                    {"status": "on_duty", "start": "11:00", "end": "11:30", "note": "Fuel stop"},
-                    {"status": "driving", "start": "11:30", "end": "15:00"},
-                    {"status": "on_duty", "start": "15:00", "end": "16:00", "note": "Dropoff"},
-                ]
-            },
-        )
-
-        # Geocode stop locations
-        stop_coords = {}
-        for stop in [pickup_stop, dropoff_stop]:
-            lat, lon = geocode_location(stop.location)
-            stop_coords[stop.id] = {"lat": lat, "lon": lon}
-
         # Fetch route geometry from OSRM
         route = None
         fuel_stops = []
+        break_stops = []
+
         if all(
             [
                 current_coords[0] is not None,
@@ -170,60 +75,214 @@ class PlanTripView(APIView):
                 ]
             )
 
-            # print("##################################")
-            # print("OSRM Route Data:", route)
-            # print("##################################")
+            """
+            Place fuel and break stops along the route
+            """
 
-            # Add fuel stops every 1000 miles (1609.34 meters per mile)
-            break_stops = []
-            if route and route["geometry"]:
-                total_distance_m = route["distance_m"]
-                interval_m = 1000 * 1609.34
-                num_stops = int(total_distance_m // interval_m)
-                geometry = route["geometry"]
-                if num_stops > 0:
-                    # Evenly space fuel stops along the route geometry
-                    step = len(geometry) // (num_stops + 1)
-                    for i in range(1, num_stops + 1):
-                        idx = i * step
-                        if idx < len(geometry):
-                            lat, lon = geometry[idx]
-                            fuel_stops.append({"lat": lat, "lon": lon, "order_index": i})
+            def haversine(lat1, lon1, lat2, lon2):
+                """Return distance in meters between two lat/lon points using the Haversine formula."""
+                R = 6371000  # Earth radius in meters
+                phi1, phi2 = radians(lat1), radians(lat2)
+                dphi = radians(lat2 - lat1)
+                dlambda = radians(lon2 - lon1)
+                a = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2
+                return R * 2 * atan2(sqrt(a), sqrt(1 - a))
 
-                # --- Break stops every 8 hours ---
-                total_duration_h = route["duration_s"] / 3600.0 if route["duration_s"] else 0
-                avg_speed_mph = (
-                    (total_distance_m / 1609.34) / total_duration_h if total_duration_h > 0 else 0
-                )
-                break_interval_h = 8
-                break_distance_m = (
-                    avg_speed_mph * break_interval_h * 1609.34 if avg_speed_mph > 0 else 0
-                )
-                num_breaks = (
-                    int(total_distance_m // break_distance_m) if break_distance_m > 0 else 0
-                )
-
-                def haversine(lat1, lon1, lat2, lon2):
-                    from math import atan2, cos, radians, sin, sqrt
-
-                    R = 6371000  # meters
-                    phi1, phi2 = radians(lat1), radians(lat2)
-                    dphi = radians(lat2 - lat1)
-                    dlambda = radians(lon2 - lon1)
-                    a = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2
-                    return R * 2 * atan2(sqrt(a), sqrt(1 - a))
-
+            def place_stops_along_route(geometry, interval_m):
+                # Compute cumulative distances
                 cum_dist = [0]
                 for i in range(1, len(geometry)):
-                    lat1, lon1 = geometry[i - 1]
-                    lat2, lon2 = geometry[i]
-                    d = haversine(lat1, lon1, lat2, lon2)
+                    d = haversine(*geometry[i - 1], *geometry[i])
                     cum_dist.append(cum_dist[-1] + d)
-                for i in range(1, num_breaks + 1):
-                    target_dist = i * break_distance_m
-                    idx = min(range(len(cum_dist)), key=lambda j: abs(cum_dist[j] - target_dist))
+
+                total_distance = cum_dist[-1]
+                num_stops = int(total_distance // interval_m)
+
+                stops = []
+                for i in range(1, num_stops + 1):
+                    target = i * interval_m
+                    # Find nearest point in geometry
+                    idx = min(range(len(cum_dist)), key=lambda j: abs(cum_dist[j] - target))
                     lat, lon = geometry[idx]
-                    break_stops.append({"lat": lat, "lon": lon, "order_index": i})
+                    stops.append({"lat": lat, "lon": lon, "order_index": i})
+                return stops
+
+            # Add fuel stops every 1000 miles (1609.34 meters per mile)
+
+            # --- Main logic ---
+            if route and route["geometry"]:
+                total_distance_m = route["distance_m"]
+                total_duration_s = route["duration_s"]
+                geometry = route["geometry"]
+
+                # Fuel stops: every 1000 miles
+                fuel_interval_m = 1000 * 1609.34
+                fuel_stops = place_stops_along_route(geometry, fuel_interval_m)
+
+                # Average speed in meters per second
+                avg_speed_mps = total_distance_m / total_duration_s if total_duration_s > 0 else 0
+
+                # Break stops: every 8 hours
+                break_interval_m = avg_speed_mps * 8 * 3600
+                break_stops = place_stops_along_route(geometry, break_interval_m)
+
+                # print("###############################")
+                # print("Fuel stops:", fuel_stops)
+                # print("###############################")
+                # print("Break stops:", break_stops)
+                # print("###############################")
+
+                # ------------------------------
+                # Build unified list of all stops
+                # ------------------------------
+                stops_info = []
+
+                # Current
+                current_lat, current_lon = current_coords
+                stops_info.append(
+                    {
+                        "type": "current",
+                        "location": current_location,
+                        "geometry_idx": 0,
+                        "duration_hours": 0.0,
+                        "lat": current_lat,
+                        "lon": current_lon,
+                    }
+                )
+
+                # Pickup
+                pickup_lat, pickup_lon = pickup_coords
+                pickup_idx = min(
+                    range(len(geometry)),
+                    key=lambda i: (geometry[i][0] - pickup_lat) ** 2
+                    + (geometry[i][1] - pickup_lon) ** 2,
+                )
+
+                stops_info.append(
+                    {
+                        "type": "pickup",
+                        "location": pickup_location,
+                        "geometry_idx": pickup_idx,
+                        "duration_hours": 1.0,
+                        "lat": pickup_lat,
+                        "lon": pickup_lon,
+                    }
+                )
+
+                # Dropoff
+                drop_lat, drop_lon = dropoff_coords
+                dropoff_idx = min(
+                    range(len(geometry)),
+                    key=lambda i: (geometry[i][0] - drop_lat) ** 2
+                    + (geometry[i][1] - drop_lon) ** 2,
+                )
+
+                stops_info.append(
+                    {
+                        "type": "dropoff",
+                        "location": dropoff_location,
+                        "geometry_idx": dropoff_idx,
+                        "duration_hours": 1.0,
+                        "lat": drop_lat,
+                        "lon": drop_lon,
+                    }
+                )
+
+                # Fuel stops
+                for fs in fuel_stops:
+                    lat, lon = fs["lat"], fs["lon"]
+                    idx = min(
+                        range(len(geometry)),
+                        key=lambda i: abs(geometry[i][0] - lat) + abs(geometry[i][1] - lon),
+                    )
+                    stops_info.append(
+                        {
+                            "type": "fuel",
+                            "location": f"{lat},{lon}",
+                            "geometry_idx": idx,
+                            "duration_hours": 0.5,
+                            "lat": lat,
+                            "lon": lon,
+                        }
+                    )
+
+                # Break stops
+                for bs in break_stops:
+                    lat, lon = bs["lat"], bs["lon"]
+                    idx = min(
+                        range(len(geometry)),
+                        key=lambda i: abs(geometry[i][0] - lat) + abs(geometry[i][1] - lon),
+                    )
+                    stops_info.append(
+                        {
+                            "type": "break",
+                            "location": f"{lat},{lon}",
+                            "geometry_idx": idx,
+                            "duration_hours": 0.5,
+                            "lat": lat,
+                            "lon": lon,
+                        }
+                    )
+
+                # Sort all stops by their order along geometry
+                stops_info_sorted = sorted(stops_info, key=lambda s: s["geometry_idx"])
+
+                # ------------------------------
+                # Compute arrival times
+                # ------------------------------
+                prev_idx = 0
+                prev_time = start_time
+                all_stop_objs = []
+
+                for idx, stop in enumerate(stops_info_sorted, start=1):
+                    # Distance from prev stop to this stop
+                    seg_dist = 0
+                    for i in range(prev_idx, stop["geometry_idx"]):
+                        lat1, lon1 = geometry[i]
+                        lat2, lon2 = geometry[i + 1]
+                        seg_dist += haversine(lat1, lon1, lat2, lon2)
+
+                    # Travel time
+                    travel_time = (
+                        timedelta(seconds=seg_dist / avg_speed_mps)
+                        if avg_speed_mps > 0
+                        else timedelta(0)
+                    )
+                    arrival_time = prev_time + travel_time
+
+                    # Save Stop object
+                    stop_obj = Stop.objects.create(
+                        trip=trip,
+                        type=stop["type"],
+                        location=stop["location"],
+                        arrival_time=arrival_time,
+                        duration_hours=stop["duration_hours"],
+                        order_index=idx,
+                        lat=stop.get("lat"),
+                        lon=stop.get("lon"),
+                    )
+                    all_stop_objs.append(stop_obj)
+
+                    # Update prev time and index for next stop
+                    prev_time = arrival_time + timedelta(hours=stop["duration_hours"])
+                    prev_idx = stop["geometry_idx"]
+
+                for stop in all_stop_objs:
+                    if stop.type == "current":
+                        stop.lat, stop.lon = current_coords
+                    elif stop.type == "pickup":
+                        stop.lat, stop.lon = pickup_coords
+                    elif stop.type == "dropoff":
+                        stop.lat, stop.lon = dropoff_coords
+                    # fuel/break already have lat/lon in location string
+
+                # Print all stops for debugging
+                print("\n--- All Stops in Order ---")
+                for s in all_stop_objs:
+                    print(
+                        f"Order {s.order_index}: {s.type} at {s.location}, arrives {s.arrival_time}, duration {s.duration_hours}h"
+                    )
+                print("--- End Stops ---\n")
 
         # Return trip with nested data and coordinates
         serializer = TripSerializer(trip)
@@ -231,10 +290,8 @@ class PlanTripView(APIView):
         trip_data["current_location_coords"] = {"lat": current_coords[0], "lon": current_coords[1]}
         trip_data["pickup_location_coords"] = {"lat": pickup_coords[0], "lon": pickup_coords[1]}
         trip_data["dropoff_location_coords"] = {"lat": dropoff_coords[0], "lon": dropoff_coords[1]}
-        trip_data["stop_coords"] = stop_coords
         trip_data["route_geometry"] = route["geometry"] if route else []
         trip_data["route_distance_m"] = route["distance_m"] if route else None
         trip_data["route_duration_s"] = route["duration_s"] if route else None
-        trip_data["fuel_stops"] = fuel_stops
-        trip_data["break_stops"] = break_stops
         return Response(trip_data, status=status.HTTP_201_CREATED)
+  

@@ -15,7 +15,7 @@ function TripResults({ trip }) {
             <ul>
                 {trip.stops.map((s) => (
                     <li key={s.id}>
-                        {s.type} at {s.location} (arrive: {s.arrival_time})
+                        {s.type} at {s.location} (arrive: {s.arrival_time}, duration: {s.duration_hours}h)
                     </li>
                 ))}
             </ul>

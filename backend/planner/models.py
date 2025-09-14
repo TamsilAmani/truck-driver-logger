@@ -27,6 +27,8 @@ class Stop(models.Model):
     arrival_time = models.DateTimeField()
     duration_hours = models.FloatField(default=0.5)  # default 30 mins for breaks
     order_index = models.IntegerField()
+    lat = models.FloatField(null=True, blank=True)
+    lon = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.type.title()} stop at {self.location}"

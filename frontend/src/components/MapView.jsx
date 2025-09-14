@@ -15,10 +15,8 @@ function MapView({ trip }) {
     const stopCoords = trip.stop_coords || {};
 
 
-    // Route geometry, fuel stops, and break stops from API
+    // Route geometry and stops from API
     const routeGeometry = trip.route_geometry || [];
-    const fuelStops = trip.fuel_stops || [];
-    const breakStops = trip.break_stops || [];
 
     // Center on current location, fallback to first stop with coords
     let center = currentLoc;
@@ -52,26 +50,18 @@ function MapView({ trip }) {
                 )}
                 {/* Trip stops */}
                 {stops.map((stop) => {
-                    const coords = stopCoords[stop.id];
-                    if (!coords || !coords.lat || !coords.lon) return null;
+                    if (!stop.lat || !stop.lon) return null;
                     return (
-                        <Marker key={stop.id} position={{ lat: coords.lat, lng: coords.lon }}>
-                            <Popup>{stop.type.charAt(0).toUpperCase() + stop.type.slice(1)} Stop<br />{stop.location}</Popup>
+                        <Marker key={stop.id} position={{ lat: stop.lat, lng: stop.lon }}>
+                            <Popup>
+                                {stop.type.charAt(0).toUpperCase() + stop.type.slice(1)} Stop<br />
+                                {stop.location} <br />
+                                Arrive: {stop.arrival_time} <br />
+                                Duration: {stop.duration_hours}h
+                            </Popup>
                         </Marker>
                     );
                 })}
-                {/* Fuel stops */}
-                {fuelStops.map((fs, idx) => (
-                    <Marker key={`fuel-${idx}`} position={{ lat: fs.lat, lng: fs.lon }}>
-                        <Popup>Fuel Stop #{fs.order_index}</Popup>
-                    </Marker>
-                ))}
-                {/* Break stops */}
-                {breakStops.map((bs, idx) => (
-                    <Marker key={`break-${idx}`} position={{ lat: bs.lat, lng: bs.lon }}>
-                        <Popup>Mandatory Break #{bs.order_index} (8hr driving)</Popup>
-                    </Marker>
-                ))}
             </MapContainer>
         </div>
     );
