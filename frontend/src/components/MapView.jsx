@@ -1,35 +1,23 @@
-
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, Marker, Polyline, Popup, TileLayer } from 'react-leaflet';
-
 
 function MapView({ trip }) {
     if (!trip) return null;
 
-    // Use coordinates from API response
-    const currentLoc = trip.current_location_coords && trip.current_location_coords.lat && trip.current_location_coords.lon
-        ? { lat: trip.current_location_coords.lat, lng: trip.current_location_coords.lon }
-        : null;
-
     const stops = trip.stops || [];
-    const stopCoords = trip.stop_coords || {};
-
-
-    // Route geometry and stops from API
     const routeGeometry = trip.route_geometry || [];
 
-    // Center on current location, fallback to first stop with coords
-    let center = currentLoc;
-    if (!center && stops.length > 0) {
-        const firstStop = stops[0];
-        const coords = stopCoords[firstStop.id];
-        if (coords && coords.lat && coords.lon) {
-            center = { lat: coords.lat, lng: coords.lon };
-        } else {
-            center = { lat: 0, lng: 0 };
-        }
+    // Center map:
+    // 1. If there are stops, center on the first stop
+    // 2. Otherwise, if route geometry exists, center on its first point
+    // 3. Fallback: (0,0)
+    let center = { lat: 0, lng: 0 };
+    if (stops.length > 0 && stops[0].lat && stops[0].lon) {
+        center = { lat: stops[0].lat, lng: stops[0].lon };
+    } else if (routeGeometry.length > 0) {
+        const [lat, lon] = routeGeometry[0];
+        center = { lat, lng: lon };
     }
-    if (!center) center = { lat: 0, lng: 0 };
 
     return (
         <div style={{ height: '400px', width: '100%' }}>
@@ -38,16 +26,12 @@ function MapView({ trip }) {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; OpenStreetMap contributors"
                 />
+
                 {/* Route polyline */}
                 {routeGeometry.length > 1 && (
                     <Polyline positions={routeGeometry.map(([lat, lon]) => [lat, lon])} color="blue" />
                 )}
-                {/* Current location marker */}
-                {currentLoc && (
-                    <Marker position={currentLoc}>
-                        <Popup>Current Location</Popup>
-                    </Marker>
-                )}
+
                 {/* Trip stops */}
                 {stops.map((stop) => {
                     if (!stop.lat || !stop.lon) return null;

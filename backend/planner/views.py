@@ -287,9 +287,6 @@ class PlanTripView(APIView):
         # Return trip with nested data and coordinates
         serializer = TripSerializer(trip)
         trip_data = serializer.data
-        trip_data["current_location_coords"] = {"lat": current_coords[0], "lon": current_coords[1]}
-        trip_data["pickup_location_coords"] = {"lat": pickup_coords[0], "lon": pickup_coords[1]}
-        trip_data["dropoff_location_coords"] = {"lat": dropoff_coords[0], "lon": dropoff_coords[1]}
         trip_data["route_geometry"] = route["geometry"] if route else []
         trip_data["route_distance_m"] = route["distance_m"] if route else None
         trip_data["route_duration_s"] = route["duration_s"] if route else None
