@@ -8,8 +8,7 @@ A modern, full-stack application for truck drivers to log trips, manage hours of
 - 🗺️ Interactive map view for routes
 - ⏰ Hours of Service (HOS) compliance tracking
 - 📊 Trip summaries and results
-- 🔒 Secure user authentication (future)
-- 📱 Responsive UI for desktop and mobile
+- 📱 Responsive UI for desktop
 
 ## 🛠️ Tech Stack
 
@@ -46,6 +45,15 @@ backend/
 frontend/
 	└── src/components/
 ```
+
+## 📝 TODO
+
+- Implement current cycle count logic in backend and frontend
+
+## 🚀 Deployment
+
+1. **Frontend:** Hosted on Vercel — [https://truck-driver-logger-frontend.vercel.app](https://truck-driver-logger-frontend.vercel.app)
+2. **Backend:** Hosted on Render — [https://truck-driver-logger-backend.onrender.com](https://truck-driver-logger-backend.onrender.com)
 
 ## 📸 Screenshots
 

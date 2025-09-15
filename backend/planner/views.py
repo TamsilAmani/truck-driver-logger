@@ -83,9 +83,6 @@ class PlanTripView(APIView):
                 ]
             )
 
-            
-            print("Route:", route)
-
             """
             Place fuel and break stops along the route
             """
@@ -271,14 +268,6 @@ class PlanTripView(APIView):
                     # Update prev time and index for next stop
                     prev_time = arrival_time + timedelta(hours=stop["duration_hours"])
                     prev_idx = stop["geometry_idx"]
-
-                # Print all stops for debugging
-                # print("\n--- All Stops in Order ---")
-                # for s in all_stop_objs:
-                #     print(
-                #         f"Order {s.order_index}: {s.type} at {s.location}, arrives {s.arrival_time}, duration {s.duration_hours}h"
-                #     )
-                # print("--- End Stops ---\n")
 
                 plan_trip(all_stop_objs)
 
