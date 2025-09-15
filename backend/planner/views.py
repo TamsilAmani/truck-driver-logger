@@ -1,5 +1,6 @@
 # Create your views here.
 from datetime import datetime, timedelta
+import json
 from math import atan2, cos, radians, sin, sqrt
 
 import requests
@@ -8,6 +9,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from .services.event_planning import plan_trip
 
 from .models import Event, LogSheet, Stop, Trip
 from .serializers import TripSerializer
@@ -49,8 +52,8 @@ class PlanTripView(APIView):
             current_cycle_used=current_cycle_used,
         )
 
-        # Build fake timeline
-        start_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+        # Trip start time: tomorrow at 7 AM
+        start_time = timezone.now().replace(hour=7, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
         # Fetch route geometry from OSRM
         route = None
@@ -125,12 +128,6 @@ class PlanTripView(APIView):
                 # Break stops: every 8 hours
                 break_interval_m = avg_speed_mps * 8 * 3600
                 break_stops = place_stops_along_route(geometry, break_interval_m)
-
-                # print("###############################")
-                # print("Fuel stops:", fuel_stops)
-                # print("###############################")
-                # print("Break stops:", break_stops)
-                # print("###############################")
 
                 # ------------------------------
                 # Build unified list of all stops
@@ -267,28 +264,23 @@ class PlanTripView(APIView):
                     prev_time = arrival_time + timedelta(hours=stop["duration_hours"])
                     prev_idx = stop["geometry_idx"]
 
-                for stop in all_stop_objs:
-                    if stop.type == "current":
-                        stop.lat, stop.lon = current_coords
-                    elif stop.type == "pickup":
-                        stop.lat, stop.lon = pickup_coords
-                    elif stop.type == "dropoff":
-                        stop.lat, stop.lon = dropoff_coords
-                    # fuel/break already have lat/lon in location string
-
                 # Print all stops for debugging
-                print("\n--- All Stops in Order ---")
-                for s in all_stop_objs:
-                    print(
-                        f"Order {s.order_index}: {s.type} at {s.location}, arrives {s.arrival_time}, duration {s.duration_hours}h"
-                    )
-                print("--- End Stops ---\n")
+                # print("\n--- All Stops in Order ---")
+                # for s in all_stop_objs:
+                #     print(
+                #         f"Order {s.order_index}: {s.type} at {s.location}, arrives {s.arrival_time}, duration {s.duration_hours}h"
+                #     )
+                # print("--- End Stops ---\n")
 
-        # Return trip with nested data and coordinates
+                plan_trip(all_stop_objs)
+
+        # Serialize trip with stops + log sheets
         serializer = TripSerializer(trip)
         trip_data = serializer.data
+        # Add route metadata
         trip_data["route_geometry"] = route["geometry"] if route else []
         trip_data["route_distance_m"] = route["distance_m"] if route else None
         trip_data["route_duration_s"] = route["duration_s"] if route else None
+
         return Response(trip_data, status=status.HTTP_201_CREATED)
-  
+    

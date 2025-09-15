@@ -19,11 +19,14 @@ class StopSerializer(serializers.ModelSerializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
     class Meta:
         model = Event
         fields = [
             "id",
             "status",
+            "status_display",
             "start_time",
             "end_time",
             "note",
@@ -43,7 +46,6 @@ class LogSheetSerializer(serializers.ModelSerializer):
 
 class TripSerializer(serializers.ModelSerializer):
     stops = StopSerializer(many=True, read_only=True)
-    events = EventSerializer(many=True, read_only=True)
     logsheets = LogSheetSerializer(many=True, read_only=True)
 
     class Meta:
