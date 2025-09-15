@@ -43,6 +43,10 @@ class PlanTripView(APIView):
         pickup_coords = geocode_location(pickup_location)
         dropoff_coords = geocode_location(dropoff_location)
 
+        print("Current coords:", current_coords)
+        print("Pickup coords:", pickup_coords)
+        print("Dropoff coords:", dropoff_coords)
+
         # Create trip
         trip = Trip.objects.create(
             current_location=current_location,
@@ -78,6 +82,9 @@ class PlanTripView(APIView):
                     dropoff_coords,
                 ]
             )
+
+            
+            print("Route:", route)
 
             """
             Place fuel and break stops along the route

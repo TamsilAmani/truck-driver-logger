@@ -1,4 +1,9 @@
+import logging
+
 import requests
+
+logger = logging.getLogger(__name__)
+
 
 def geocode_location(name):
     """Return (lat, lon) for a location name using Nominatim."""
@@ -14,6 +19,6 @@ def geocode_location(name):
         results = resp.json()
         if results:
             return float(results[0]["lat"]), float(results[0]["lon"])
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Geocoding failed for {name}: {e}")
     return None, None

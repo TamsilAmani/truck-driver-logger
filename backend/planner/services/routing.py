@@ -1,4 +1,9 @@
+import logging
+
 import requests
+
+logger = logging.getLogger(__name__)
+
 
 def get_osrm_route(coords_list):
     """
@@ -8,8 +13,8 @@ def get_osrm_route(coords_list):
     if not coords_list or len(coords_list) < 2:
         return None
     # OSRM expects lon,lat order
-    coord_str = ';'.join([f"{lon},{lat}" for lat, lon in coords_list])
-    url = f"http://router.project-osrm.org/route/v1/driving/{coord_str}"
+    coord_str = ";".join([f"{lon},{lat}" for lat, lon in coords_list])
+    url = f"https://router.project-osrm.org/route/v1/driving/{coord_str}"
     params = {
         "overview": "full",
         "geometries": "geojson",
@@ -28,6 +33,6 @@ def get_osrm_route(coords_list):
                 "duration_s": route["duration"],
                 "geometry": geometry_latlon,
             }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Geocoding failed for {name}: {e}")
     return None
