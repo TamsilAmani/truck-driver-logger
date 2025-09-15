@@ -54,8 +54,8 @@ frontend/
 
 ## 🚀 Deployment
 
-1. **Frontend:** Hosted on Vercel — [https://truck-driver-logger-frontend.vercel.app](https://truck-driver-logger-frontend.vercel.app)
-2. **Backend:** Hosted on Render — [https://truck-driver-logger-backend.onrender.com](https://truck-driver-logger-backend.onrender.com)
+1. **Frontend:** Hosted on Vercel — [https://truck-driver-logger.vercel.app](https://truck-driver-logger.vercel.app)
+2. **Backend:** Hosted on Render — [https://truck-driver-logger.onrender.com](https://truck-driver-logger.onrender.com)
 
 ## 📄 License
 
