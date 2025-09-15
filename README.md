@@ -1,4 +1,4 @@
-🚚 Truck Driver Logger
+# 🚚 Truck Driver Logger
 
 A modern, full-stack application for truck drivers to log trips, manage hours of service, and visualize routes. Built with Django (backend) and React + Vite (frontend).
 
