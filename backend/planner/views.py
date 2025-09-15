@@ -1,6 +1,6 @@
 # Create your views here.
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 from math import atan2, cos, radians, sin, sqrt
 
 import requests
@@ -10,10 +10,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .services.event_planning import plan_trip
-
 from .models import Event, LogSheet, Stop, Trip
 from .serializers import TripSerializer
+from .services.event_planning import plan_trip
 from .services.geocoding import geocode_location
 from .services.routing import get_osrm_route
 
@@ -53,7 +52,9 @@ class PlanTripView(APIView):
         )
 
         # Trip start time: tomorrow at 7 AM
-        start_time = timezone.now().replace(hour=7, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        start_time = timezone.now().replace(hour=7, minute=0, second=0, microsecond=0) + timedelta(
+            days=1
+        )
 
         # Fetch route geometry from OSRM
         route = None
@@ -283,4 +284,3 @@ class PlanTripView(APIView):
         trip_data["route_duration_s"] = route["duration_s"] if route else None
 
         return Response(trip_data, status=status.HTTP_201_CREATED)
-    
