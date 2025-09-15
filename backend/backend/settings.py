@@ -64,7 +64,7 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True  # for dev
 
 CORS_ALLOWED_ORIGINS = [
-    "https://your-frontend.vercel.app",
+    "https://truck-driver-logger.vercel.app/",
     "http://localhost:5173",
 ]
 
