@@ -19,8 +19,8 @@ function TripForm({ onPlan }) {
         };
 
         try {
-            const API_URL = process.env.VITE_API_URL;
-            console.log("API URL:", process.env.VITE_API_URL);
+            const API_URL = import.meta.env.VITE_API_URL;
+            console.log("API URL:", API_URL);
             const response = await fetch(`${API_URL}/api/plan/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -146,7 +146,7 @@ function TripForm({ onPlan }) {
                     className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 transform ${isLoading
                         ? 'bg-blue-100 text-blue-700 cursor-not-allowed' // lighter background, visible text
                         : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] text-white'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                 >
                     {isLoading ? (
                         <div className="flex items-center justify-center">
