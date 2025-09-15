@@ -14,7 +14,7 @@ from .models import Event, LogSheet, Stop, Trip
 from .serializers import TripSerializer
 from .services.event_planning import plan_trip
 from .services.geocoding import geocode_location
-from .services.routing import get_osrm_route
+from .services.routing import get_mapbox_route
 
 
 class PlanTripView(APIView):
@@ -75,7 +75,7 @@ class PlanTripView(APIView):
                 dropoff_coords[1] is not None,
             ]
         ):
-            route = get_osrm_route(
+            route = get_mapbox_route(
                 [
                     current_coords,
                     pickup_coords,

@@ -1,32 +1,33 @@
-import logging
-
+import os
 import requests
 
-logger = logging.getLogger(__name__)
+MAPBOX_TOKEN = os.environ.get("MAPBOX_API_KEY")
 
 
-def get_osrm_route(coords_list):
+def get_mapbox_route(coords_list):
     """
-    Given a list of (lat, lon) tuples, fetch route geometry from OSRM.
-    Returns: { 'distance': float (meters), 'duration': float (seconds), 'geometry': [ [lat, lon], ... ] }
+    coords_list: [(lat, lon), ...]
+    Returns: {'distance_m', 'duration_s', 'geometry': [[lat, lon], ...]}
     """
     if not coords_list or len(coords_list) < 2:
         return None
-    # OSRM expects lon,lat order
+
+    # Mapbox expects lon,lat order
     coord_str = ";".join([f"{lon},{lat}" for lat, lon in coords_list])
-    url = f"https://router.project-osrm.org/route/v1/driving/{coord_str}"
+    url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{coord_str}"
     params = {
-        "overview": "full",
+        "access_token": MAPBOX_TOKEN,
         "geometries": "geojson",
+        "overview": "full",
     }
+
     try:
-        resp = requests.get(url, params=params)
+        resp = requests.get(url, params=params, timeout=10)
         resp.raise_for_status()
         data = resp.json()
         if data.get("routes"):
             route = data["routes"][0]
             geometry = route["geometry"]["coordinates"]  # [ [lon, lat], ... ]
-            # Convert to [lat, lon]
             geometry_latlon = [[lat, lon] for lon, lat in geometry]
             return {
                 "distance_m": route["distance"],
@@ -34,5 +35,5 @@ def get_osrm_route(coords_list):
                 "geometry": geometry_latlon,
             }
     except Exception as e:
-        logger.error(f"Geocoding failed for {name}: {e}")
-    return None
+        print(f"Mapbox routing failed: {e}")
+        return None
