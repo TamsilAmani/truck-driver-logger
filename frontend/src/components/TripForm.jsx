@@ -20,6 +20,7 @@ function TripForm({ onPlan }) {
 
         try {
             const API_URL = process.env.REACT_APP_API_URL;
+            console.log("API URL:", process.env.REACT_APP_API_URL);
             const response = await fetch(`${API_URL}/api/plan/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
